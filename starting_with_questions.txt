@@ -1,0 +1,206 @@
+Answer the following questions and provide the SQL queries used to find the answer.
+
+    
+**Question 1: Which cities and countries have the highest level of transaction revenues on the site?**
+
+
+SQL Queries:
+SELECT DISTINCT (tas.country), tas.city, MAX (ta.unit_price * tp.orderedquantity)
+AS max_transactionrevenues 
+FROM temp_all_sessions tas
+JOIN temp_products tp
+ON tas.productsku = tp.productsku
+JOIN temp_analytics ta
+ON tas.visitid = ta.visitid
+WHERE ta.unit_price * tp.orderedquantity = (SELECT max (ta.unit_price * tp.orderedquantity)											
+					    FROM temp_all_sessions tas
+					    JOIN temp_products tp
+					    ON tas.productsku = tp.productsku
+					    JOIN temp_analytics ta
+					    ON tas.visitid = ta.visitid)		
+GROUP BY tas.country, tas.city, ta.unit_price * tp.orderedquantity;
+
+
+Answer:
+To get the cities and countries with the highest level of transaction revenues, the 'totaltransactionrevenue'
+column in the All_sessions table could not be used because only 81 values out of 15134 were given, which would not give
+a meaningful data. Therefore to  get the transaction revenue, the unit_price from Analytics Table, orderedquantity from
+Products Table with the corresponding cities and countries from All_sessions table.
+
+The country and Cities with the highest revenue are;
+Country = United States of America, City = Chigaco
+Country = United States of America, City = Newyork 
+Highest transaction revenue = 2,199,650 USD
+
+
+
+**Question 2: What is the average number of products ordered from visitors in each city and country?**
+
+
+SQL Queries:
+SELECT DISTINCT (tas.city), tas.country, CAST(AVG(tp.orderedquantity) as numeric (5,0)) 
+                AS avg_orderedquantity
+FROM temp_all_sessions tas 
+JOIN temp_products tp
+ON tp.productsku = tas.productsku
+JOIN temp_analytics ta
+ON tas.visitid = ta.visitid
+WHERE tp.orderedquantity >0
+GROUP BY tas.city, tas.country
+ORDER BY tas.city, tas.country
+
+
+Answer:
+From each city and country, the average number of products ordered from visitors (visitors that
+visited the page to place an order = visitid) are partitioned by each city and country, giving a 
+total of 240 unique city and countries.
+The ALL_Session table, Analytics and Products table were joined using Productsku as the unique
+column between all_sessions and Products table. Aswell as visitid as the unique column between
+All_sessions table and analytics table.
+filtering out ordered quantity < 0 (i.e no order was made).
+
+
+
+**Question 3: Is there any pattern in the types (product categories) of products ordered 
+from visitors in each city and country?**
+
+
+SQL Queries:
+1. SELECT DISTINCT(tas.productcategory), tas.city, tas.country, SUM(tp.orderedquantity)
+                  OVER (PARTITION BY tas.productcategory) AS sum_orderedquantity
+   FROM temp_all_sessions tas
+   JOIN temp_products tp
+   ON tas.productsku = tp.productsku
+   WHERE tas.productcategory LIKE '%Home%' AND tp.orderedquantity > 0
+   ORDER BY tas.country, tas.city, tas.productcategory
+
+2. SELECT DISTINCT(tas.productcategory), tas.city, tas.country, SUM(tp.orderedquantity)
+                  OVER (PARTITION BY tas.productcategory) AS sum_orderedquantity
+   FROM temp_all_sessions tas
+   JOIN temp_products tp
+   ON tas.productsku = tp.productsku
+   WHERE tas.productcategory LIKE '%Home/Apparel%' AND tp.orderedquantity > 0
+   ORDER BY tas.country, tas.city, tas.productcategory;
+
+3. SELECT DISTINCT(tas.productcategory), tas.city, tas.country, SUM(tp.orderedquantity)
+                  OVER (PARTITION BY tas.productcategory) AS sum_orderedquantity
+   FROM temp_all_sessions tas
+   JOIN temp_products tp
+   ON tas.productsku = tp.productsku
+   WHERE tas.productcategory LIKE '%Home/Apparel/Women%' AND tp.orderedquantity > 0
+   ORDER BY tas.country, tas.city, tas.productcategory
+
+4. SELECT DISTINCT(tas.productcategory), tas.city, tas.country, SUM(tp.orderedquantity)
+                  OVER (PARTITION BY tas.productcategory) AS sum_orderedquantity
+   FROM temp_all_sessions tas
+   JOIN temp_products tp
+   ON tas.productsku = tp.productsku
+   WHERE tas.productcategory LIKE '%Home/Apparel/Men%' AND tp.orderedquantity > 0
+   ORDER BY tas.country, tas.city, tas.productcategory
+
+5. SELECT DISTINCT(tas.productcategory), tas.city, tas.country, SUM(tp.orderedquantity)
+                  OVER (PARTITION BY tas.productcategory) AS sum_orderedquantity
+   FROM temp_all_sessions tas
+   JOIN temp_products tp
+   ON tas.productsku = tp.productsku
+   WHERE tas.productcategory LIKE '%Home/Apparel/Kid%' AND tp.orderedquantity > 0
+   ORDER BY tas.country, tas.city, tas.productcategory
+
+6. SELECT DISTINCT(tas.productcategory), tas.city, tas.country, SUM(tp.orderedquantity)
+                  OVER (PARTITION BY tas.productcategory) AS sum_orderedquantity
+   FROM temp_all_sessions tas
+   JOIN temp_products tp
+   ON tas.productsku = tp.productsku
+   WHERE tas.productcategory LIKE '%Home/Accessories%' AND tp.orderedquantity > 0
+   ORDER BY tas.country, tas.city, tas.productcategory
+
+
+7. SELECT DISTINCT(tas.productcategory), tas.city, tas.country, SUM(tp.orderedquantity)
+                  OVER (PARTITION BY tas.productcategory) AS sum_orderedquantity
+   FROM temp_all_sessions tas
+   JOIN temp_products tp
+   ON tas.productsku = tp.productsku
+   WHERE tas.productcategory LIKE '%Home/Electronics%' AND tp.orderedquantity > 0
+   ORDER BY tas.country, tas.city, tas.productcategory
+
+Answer:
+The prominent pattern is the Hierachical categorization of Products
+
+1. 2627 unique types of products that is used in Homes were ordered by visitors in
+   each city and country.
+2. 909 unique types of products that are apparels for home use were ordered by visitors in each
+   city and country.
+3. 186 unique types of products that are women's apparel for home use were ordered by visitors
+   in each city and country. 
+4. 436 unique types of products that are men's apparel for home use were ordered by visitors
+   in each city and country.
+5. 105 unique types of products that are kid's apparel for home use were ordered by visitors
+   in each city and country
+6. 297 unique types of products that are accessories for home use were ordered by visitors
+   in each city and country
+7. 253 unique types of products that are electronics for home use were ordered by visitors
+   in each city and country
+
+
+
+
+**Question 4: What is the top-selling product from each city/country? Can we find any 
+pattern worthy of noting in the products sold?**
+
+
+SQL Queries:
+WITH ranked_products AS(
+SELECT tas.city, tas.country, tas.productname, MAX(ta.unit_sold) AS max_unit_sold,
+		RANK() OVER (PARTITION BY tas.city, tas.country ORDER BY MAX(ta.unit_sold) DESC)
+		AS product_rank
+FROM temp_all_sessions tas
+JOIN temp_analytics ta ON tas.visitid = ta.visitid
+GROUP BY tas.country, tas.city, tas.productname
+)
+SELECT city, country, productname, max_unit_sold, product_rank
+FROM ranked_products
+WHERE product_rank = 1 AND max_unit_sold != 0
+ORDER BY max_unit_sold DESC 
+
+
+Answer:
+To get the top selling Products from each city/country the All_sessions and Analytical
+tables were joined, considering Visitid column as a unique column between them because
+for a product to be sold, it needed to have been ordered by a visitor who vivited the site
+(visitid).
+There for the Maximum unit sold was ranked for each city/country. Using CTE to to create a 
+nested query for infering purpose.
+
+
+
+**Question 5: Can we summarize the impact of revenue generated from each city/country?**
+
+SQL Queries:
+SELECT DISTINCT (tas.city), tas.country, SUM (ta.revenue) OVER (PARTITION BY tas.city, tas.country) 
+AS total_rvn_from_each_city
+FROM temp_all_sessions tas
+JOIN temp_analytics ta
+ON tas.fullvisitorid = ta.fullvisitorid
+where revenue != 0
+ORDER BY total_rvn_from_each_city DESC
+
+Answer:
+From the Analysis, we can deduce that United state has the highest generated revenue, compared
+to the occurence of other countries in the output.
+
+Summarizing the impact of revenue generated from each city or country, typically 
+involves analyzing and understanding the significance of revenue in relation to specific 
+locations. This analysis can help identify key revenue-generating areas, assess the contribution 
+of different cities or countries to overall revenue, and make informed decisions regarding 
+resource allocation, market strategies, and business expansion.
+
+With this summary, businesses can gain insights into the relative performance
+of different regions, identify potential growth opportunities, and optimize their 
+operations accordingly. It provides a way to evaluate the effectiveness of revenue generation 
+strategies and understand the role of different locations in driving overall financial outcomes.
+
+
+
+
+
+
